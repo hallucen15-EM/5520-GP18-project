@@ -2,9 +2,9 @@ import torch
 import os
 from transformers import AutoTokenizer, AutoModelForCausalLM,BitsAndBytesConfig
 
-model_name = "Qwen/Qwen3-8B"
+model_name = "Qwen/Qwen3-4B"
 current_dir = os.path.dirname(os.path.abspath(__file__))
-cache_dir = os.path.join(current_dir, "qwen")
+cache_dir = os.path.join(current_dir, "qwen4b")
 os.makedirs(cache_dir, exist_ok=True)
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, cache_dir=cache_dir)
