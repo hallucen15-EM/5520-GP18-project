@@ -25,15 +25,15 @@ def create_prompts(question, answer, fewshot_examples=None):
     # 2. CoT, zero-shot
     prompts["cot_zero"] = f"Q: {question}\nA: let's think step by step: (Output the final numerical answer without commas, with format 'answer = ')"
     
-    # # 3. Direct Answer, fewshot
-    # if fewshot_examples:
-    #     fewshot_direct = "\n".join([f"Q: {ex['question']}\nA: {ex['answer']}" for ex in fewshot_examples[:3]])
-    #     prompts["direct_few"] = f"{fewshot_direct}\n\nQ: {question}\nA: (Output the final numerical answer without commas, with format 'answer = ')"
+    # 3. Direct Answer, fewshot
+    if fewshot_examples:
+        fewshot_direct = "\n".join([f"Q: {ex['question']}\nA: {ex['answer']}" for ex in fewshot_examples[:3]])
+        prompts["direct_few"] = f"{fewshot_direct}\n\nQ: {question}\nA: (Output the final numerical answer without commas, with format 'answer = ')"
     
-    # # 4. CoT, fewshot
-    # if fewshot_examples:
-    #     fewshot_cot = "\n".join([f"Q: {ex['question']}\nA: let's think step by step:{ex['answer']}" for ex in fewshot_examples[:3]])
-    #     prompts["cot_few"] = f"{fewshot_cot}\n\nQ: {question}\nA: let's think step by step: (Output the final numerical answer without commas, with format 'answer = ')"
+    # 4. CoT, fewshot
+    if fewshot_examples:
+        fewshot_cot = "\n".join([f"Q: {ex['question']}\nA: let's think step by step:{ex['answer']}" for ex in fewshot_examples[:3]])
+        prompts["cot_few"] = f"{fewshot_cot}\n\nQ: {question}\nA: let's think step by step: (Output the final numerical answer without commas, with format 'answer = ')"
     
     return prompts
 
@@ -55,9 +55,9 @@ def extract_final_answer(output, ground_truth):
 def evaluate_gsm8k(model,tokenizer,model_path, dataset, n_samples=100):    
     fewshot_examples = [
         {"question": "Natalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell altogether in April and May?", 
-         "answer": "24"},
+         "answer": "48/2 = 24, answer = 24"},
         {"question": "Lucia ate 3/5 of a bag of oranges. If she ate 21 oranges, how many oranges were in the bag originally?", 
-         "answer": "35"}
+         "answer": "21/3*5 = 35, answer = 35"}
     ]
     
     results = []
