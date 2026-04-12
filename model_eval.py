@@ -16,24 +16,24 @@ def generate_text(model, tokenizer, prompt, max_new_tokens=512, enable_thinking=
     outputs = model.generate(**inputs, max_new_tokens=max_new_tokens)
     return tokenizer.decode(outputs[0][len(inputs.input_ids[0]):], skip_special_tokens=True)
 
-def create_prompts(question, answer, fewshot_examples=None):
+def create_prompts(question, answer, C_fewshot_examples=None, D_fewshot_examples=None):
     prompts = {}
     
     # 1. Direct Answer, zero-shot
-    prompts["direct_zero"] = f"Q: {question}\nA: (Output the final numerical answer without commas, with format 'answer = ')"
+    prompts["direct_zero"] = f"Strictly follow the format, do not output any reasoning or extra text, only output the final numerical answer without commas, with format 'answer = '\n\n Q: {question}\nA: "
     
     # 2. CoT, zero-shot
-    prompts["cot_zero"] = f"Q: {question}\nA: let's think step by step: (Output the final numerical answer without commas, with format 'answer = ')"
+    prompts["cot_zero"] = f"After reasoning, output the final numerical answer without commas, with format 'answer = '\n\n Q: {question}\nA: let's think step by step: "
     
     # 3. Direct Answer, fewshot
-    if fewshot_examples:
-        fewshot_direct = "\n".join([f"Q: {ex['question']}\nA: {ex['answer']}" for ex in fewshot_examples[:3]])
-        prompts["direct_few"] = f"{fewshot_direct}\n\nQ: {question}\nA: (Output the final numerical answer without commas, with format 'answer = ')"
+    if D_fewshot_examples:
+        fewshot_direct = "\n".join([f"Q: {ex['question']}\nA: {ex['answer']}" for ex in D_fewshot_examples[:3]])
+        prompts["direct_few"] = f"Strictly follow the format, do not output any reasoning or extra text, only output the final numerical answer without commas, with format 'answer = '\n\n {fewshot_direct}\n\nQ: {question}\nA: "
     
     # 4. CoT, fewshot
-    if fewshot_examples:
-        fewshot_cot = "\n".join([f"Q: {ex['question']}\nA: let's think step by step:{ex['answer']}" for ex in fewshot_examples[:3]])
-        prompts["cot_few"] = f"{fewshot_cot}\n\nQ: {question}\nA: let's think step by step: (Output the final numerical answer without commas, with format 'answer = ')"
+    if C_fewshot_examples:
+        fewshot_cot = "\n".join([f"Q: {ex['question']}\nA: let's think step by step: {ex['answer']}" for ex in C_fewshot_examples[:3]])
+        prompts["cot_few"] = f"After reasoning, output the final numerical answer without commas, with format 'answer = '\n\n {fewshot_cot}\n\nQ: {question}\nA: let's think step by step: "
     
     return prompts
 
@@ -41,7 +41,7 @@ def extract_final_answer(output, ground_truth):
     
     # Use re to extract final answer
 
-    matches = re.findall(r"answer\s*=\s*(\d+(?:\s*\d+)*)", output)
+    matches = re.findall(r"answer\s*=\s*(\d+(?:\s*\d+)*)", output, re.IGNORECASE)
     if matches:
         last_answer = matches[-1]
         return last_answer, "answer pattern"
@@ -53,11 +53,26 @@ def extract_final_answer(output, ground_truth):
     return None, "failed"
 
 def evaluate_gsm8k(model,tokenizer,model_path, dataset, start_idx=0, end_idx=None):    
-    fewshot_examples = [
-        {"question": "Natalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell in May?", 
-         "answer": "48/2 = 24, answer = 24"},
-        {"question": "Lucia ate 3/5 of a bag of oranges. If she ate 21 oranges, how many oranges were in the bag originally?", 
-         "answer": "21/3*5 = 35, answer = 35"}
+    CoT_fewshot_examples = [
+        {
+            "question": "Natalia sold 48 clips to her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell in May?", 
+            "answer": "Natalia sold 48 clips in April. In May, she sold half as many as in April, so she sold 48 ÷ 2 = 24 clips. Therefore, answer = 24"
+        },
+        {
+            "question": "Lucia ate 3/5 of a bag of oranges. If she ate 21 oranges, how many oranges were in the bag originally?", 
+            "answer": "Lucia ate 3/5 of the bag, which equals 21 oranges. So 1/5 of the bag = 21 ÷ 3 = 7 oranges. The whole bag = 7 x 5 = 35 oranges. Therefore, answer = 35"
+        }
+    ]
+
+    Direct_fewshot_examples = [
+        {
+            "question": "Natalia sold 48 clips to her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell in May?", 
+            "answer": "answer = 24"
+        },
+        {
+            "question": "Lucia ate 3/5 of a bag of oranges. If she ate 21 oranges, how many oranges were in the bag originally?", 
+            "answer": "answer = 35"
+        }
     ]
     
     results = []
@@ -68,7 +83,7 @@ def evaluate_gsm8k(model,tokenizer,model_path, dataset, start_idx=0, end_idx=Non
         question = dataset[i]["question"]
         ground_truth = dataset[i]["answer"].split("####")[-1].strip()
         
-        prompts = create_prompts(question, ground_truth, fewshot_examples)
+        prompts = create_prompts(question, ground_truth, CoT_fewshot_examples, Direct_fewshot_examples)
         
         for prompt_type, prompt in prompts.items():
             output = generate_text(model,tokenizer,prompt)
@@ -133,7 +148,7 @@ def main():
     print(f"in total {len(dataset)} of tests")
 
     # adjust the last two argument as the range to generate test result from dataset
-    results_df = evaluate_gsm8k(model, tokenizer,local_path, dataset, 100,200)
+    results_df = evaluate_gsm8k(model, tokenizer,local_path, dataset, 0,50)
 
 if __name__ == "__main__":
     main()
