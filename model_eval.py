@@ -52,17 +52,19 @@ def extract_final_answer(output, ground_truth):
     
     return None, "failed"
 
-def evaluate_gsm8k(model,tokenizer,model_path, dataset, n_samples=100):    
+def evaluate_gsm8k(model,tokenizer,model_path, dataset, start_idx=0, end_idx=None):    
     fewshot_examples = [
-        {"question": "Natalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell altogether in April and May?", 
+        {"question": "Natalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell in May?", 
          "answer": "48/2 = 24, answer = 24"},
         {"question": "Lucia ate 3/5 of a bag of oranges. If she ate 21 oranges, how many oranges were in the bag originally?", 
          "answer": "21/3*5 = 35, answer = 35"}
     ]
     
     results = []
+    if end_idx is None:
+        end_idx = len(dataset)
     
-    for i in range(min(n_samples, len(dataset))):
+    for i in range(start_idx, end_idx):
         question = dataset[i]["question"]
         ground_truth = dataset[i]["answer"].split("####")[-1].strip()
         
@@ -85,13 +87,14 @@ def evaluate_gsm8k(model,tokenizer,model_path, dataset, n_samples=100):
                 "method": method
             })
             
-            print(f"{i+1}/{n_samples}: {pred} == {ground_truth} ? {correct}")
+            print(f"{i+1}/{end_idx}: {pred} == {ground_truth} ? {correct}")
         
-        print(f"已完成 {i+1}/{n_samples}")
+        print(f"done {i+1}/{end_idx}")
     
     # save
     df = pd.DataFrame(results)
-    df.to_csv("gsm8k_cot_results.csv", index=False)
+    filename = f"gsm8k_cot_results[{start_idx}-{end_idx}].csv"
+    df.to_csv(filename, index=False)
 
     print("\n=== accuracy for each prompt type ===")
     acc_by_type = df.groupby('prompt_type')['correct'].agg([
@@ -129,7 +132,8 @@ def main():
     dataset = load_dataset("gsm8k", "main")["test"]
     print(f"in total {len(dataset)} of tests")
 
-    results_df = evaluate_gsm8k(model, tokenizer,local_path, dataset, n_samples=5)
+    # adjust the last two argument as the range to generate test result from dataset
+    results_df = evaluate_gsm8k(model, tokenizer,local_path, dataset, 100,200)
 
 if __name__ == "__main__":
     main()

@@ -34,9 +34,20 @@ python model_set.py
 The model will be downloaded in the root directory of the repo
 
 2. Evaluate with Dataset
-In model_eval.py, change the local_path to the model in your local disk.
+
+model_eval.py systematically evaluates Chain-of-Thought prompting effectiveness using the GSM8K dataset by comparing four strategies—Direct zero-shot, CoT zero-shot, Direct few-shot, and CoT few-shot—through automated generation, answer extraction, and accuracy computation. You can set the range of evaluation in dataset by change the last two argument of evaluate_gsm8k(). The produced CSV results will contains per-strategy performance metrics with name "gsm8k_cot_results[xx-xx]" where [xx-xx] repersent the range in tested dataset.
+
+After range setting, run the evaluation script:
 Run the evaluation script to feed a dataset into the model:
 
 ```bash
 python model_eval.py
 ```
+
+3. Data interpretation
+
+After the csv files generated, you can move them into the /data folder, and use the data_analyze.py to check how many data are tesed and the accuracy for each methods.
+```bash
+python data_analyze.py
+```
+
