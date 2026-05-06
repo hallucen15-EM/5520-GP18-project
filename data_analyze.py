@@ -10,7 +10,7 @@ def analyze_results(path_pattern="gsm8k_cot_results[*.csv"):
     for subdir in data_dir.iterdir():
         if subdir.is_dir():
             files = glob.glob(str(subdir / path_pattern))
-            print(f"[{subdir.name}] find {len(files)} files:", files)
+            print(f"[{subdir.name}] find {len(files)} files")
 
             # combine the rows
             dfs = []
